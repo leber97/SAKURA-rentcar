@@ -1,14 +1,38 @@
 // ==========================================================
+// 0. Firebase 配置与初始化 (新增)
+// ==========================================================
+
+// !!! 替换为您自己的 Firebase 配置 !!!
+const firebaseConfig = {
+    apiKey: "<YOUR_API_KEY>", 
+    authDomain: "<YOUR_PROJECT_ID>.firebaseapp.com",
+    databaseURL: "https://<YOUR_PROJECT_ID>-default-rtdb.firebaseio.com", 
+    projectId: "<YOUR_PROJECT_ID>", 
+    storageBucket: "<YOUR_PROJECT_ID}.appspot.com",
+    messagingSenderId: "<YOUR_SENDER_ID>",
+    appId: "<YOUR_APP_ID>"
+};
+
+// 引入 Firebase 模块（假设已在 HTML 中引入 SDK）
+const { initializeApp } = firebase;
+const { getDatabase, ref, set, onValue } = firebase.database;
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const DATA_KEY = 'rentacarSystemData';
+const dataRef = ref(db, DATA_KEY);
+
+
+// ==========================================================
 // 1. 数据存储与初始化
 // ==========================================================
 
-const DATA_KEY = 'rentacarSystemData';
 const TASK_DURATION_MINUTES = 30; // 任务操作时间常量（分钟）
 const BUFFER_MINUTES = 15; // 任务间隙缓冲时间（分钟）
 
-let appData = {
+// 默认数据结构 (用于初始化 Firebase)
+const defaultAppData = {
     cars: [
-        // 车辆数据结构：新增 licensePlate, color, 订单相关状态
         { id: 'C001', alias: '小黑', licensePlate: '京A8888', color: '黑', info: '丰田卡罗拉', status: '在库', orderId: null, nextAction: '在库', location: '本社工厂', isClean: true, lastCheckDate: '2025-09-10' },
         { id: 'C002', alias: '小白', licensePlate: '沪B6666', color: '白', info: '本田思域', status: '在库', orderId: null, nextAction: '在库', location: '本社工厂', isClean: false, lastCheckDate: '2025-07-20' }, 
         { id: 'C003', alias: '商务之星', licensePlate: '粤C1234', color: '灰', info: '丰田海狮', status: '维修', orderId: null, nextAction: '维修', location: '本社工厂', isClean: true, lastCheckDate: '2025-10-01' }
@@ -18,7 +42,6 @@ let appData = {
         { id: 'E102', name: '田中', start: '10:00', end: '19:00' }
     ],
     orders: [
-        // 订单数据结构：新增 carId, details (babySeat, needsPayment), startTime, endTime
         { id: 'O1001', type: '接车', location: '羽田空港', time: '10:30', notes: '航班JL123', assignedTo: 'E101', carId: 'C001', details: { babySeat: false, needsPayment: true, checkItems: ['油量', '外观'] }, startTime: '2025-11-01', endTime: '2025-11-03' },
         { id: 'O1002', type: '送车', location: '成田空港', time: '14:00', notes: '需收款', assignedTo: 'E101', carId: null, details: { babySeat: true, needsPayment: false, checkItems: ['导航设置', '确认客户证件'] }, startTime: '2025-11-04', endTime: '2025-11-05' }, 
         { id: 'O1003', type: '接车', location: '本社工厂', time: '11:00', notes: '紧急订单', assignedTo: null, carId: null, details: { babySeat: false, needsPayment: false, checkItems: [] }, startTime: '2025-10-31', endTime: '2025-11-01' }, 
@@ -34,33 +57,66 @@ let appData = {
     }
 };
 
+// 全局应用数据状态，将由 Firebase 实时更新
+let appData = defaultAppData; 
+
 /**
- * 从 localStorage 加载数据，如果不存在则使用默认值。
+ * [重写] 从 Firebase 实时加载数据，并监听变化。
+ * 移除 localStorage 逻辑。
  */
 function loadData() {
-    const json = localStorage.getItem(DATA_KEY);
-    if (json) {
-        const loadedData = JSON.parse(json);
-        appData.cars = loadedData.cars || [];
-        appData.employees = loadedData.employees || [];
-        appData.orders = loadedData.orders || [];
-        appData.travelTimes = loadedData.travelTimes || appData.travelTimes; // 尝试加载 travelTimes
-    }
+    // 强制清除旧的本地存储，确保多人模式生效
+    localStorage.removeItem(DATA_KEY); 
+    
+    onValue(dataRef, (snapshot) => {
+        const data = snapshot.val();
+        
+        if (data) {
+            // 实时更新全局 appData 变量
+            Object.assign(appData, data);
+            console.log('数据已从 Firebase 实时同步并更新。');
+        } else {
+            // 如果 Firebase 数据库中没有数据，则使用默认结构并写入一次
+            console.log('Firebase 数据库为空，使用默认数据初始化。');
+            appData = defaultAppData;
+            saveData(); // 写入默认数据
+            // 首次加载不需要运行下面的渲染，因为它会在保存后再次触发
+            return;
+        }
+
+        // 核心：数据加载或更新后，重新渲染当前活动页面
+        const activePage = document.querySelector('.page.active');
+        if (activePage) {
+            // 确保在数据加载完成后再执行渲染
+            if (activePage.id === 'car-management') {
+                renderCars();
+                renderGanttChart(); 
+            } else if (activePage.id === 'personnel-scheduling') {
+                renderCarOptions();
+                renderScheduling();
+            }
+        }
+    });
 }
 
 /**
- * 将当前数据保存到 localStorage。
+ * [重写] 将当前数据保存到 Firebase。
+ * 移除 localStorage 逻辑。
  */
 function saveData() {
-    localStorage.setItem(DATA_KEY, JSON.stringify(appData));
+    if (!appData) return;
+    set(dataRef, appData)
+        .then(() => console.log('数据已成功上传到 Firebase。'))
+        .catch(error => console.error('数据上传失败:', error));
 }
+
 
 // ==========================================================
 // 2. 页面导航与初始化
 // ==========================================================
 
 /**
- * 切换显示界面
+ * 切换显示界面 (修改：避免在 Firebase 监听器中重复调用 loadData 导致无限循环)
  */
 function showPage(pageId) {
     document.querySelectorAll('.page').forEach(page => {
@@ -74,19 +130,21 @@ function showPage(pageId) {
     const navId = pageId.includes('car') ? 'nav-car' : 'nav-schedule';
     document.getElementById(navId).classList.add('active');
 
+    // 仅在手动切换页面时触发渲染，数据更新通过 loadData 内部的监听器触发
     if (pageId === 'car-management') {
         renderCars();
-        renderGanttChart(); // 使用新的甘特图渲染
+        renderGanttChart(); 
     } else if (pageId === 'personnel-scheduling') {
-        renderCarOptions(); // 填充车辆选项
+        renderCarOptions(); 
         renderScheduling();
     }
 }
 
 // ==========================================================
 // 3. 车辆管理逻辑 (CRUD & 甘特图)
+// ... (此部分代码保持不变，请从您的原 script.js 文件中复制) ...
+// (省略 renderCars, updateCarAssignment, renderGanttChart 等函数的代码以保持简洁)
 // ==========================================================
-
 let currentGanttMonth = new Date(); 
 
 function changeGanttMonth(offset) {
@@ -118,6 +176,8 @@ function updateCarAssignment(carId, orderId, orderType) {
             car.nextAction = '在库';
             car.status = '在库';
         }
+        // 由于 appData 已被修改，立即保存到 Firebase
+        saveData();
     }
 }
 
@@ -175,8 +235,9 @@ function renderCars() {
             const currentCar = appData.cars.find(c => c.id === car.id);
             if (currentCar) {
                 currentCar.lastCheckDate = e.target.value;
-                renderCars(); 
-                saveData();
+                // 注意：这里调用 renderCars() 会导致输入框失焦，但由于数据通过 Firebase 再次拉取，影响较小
+                // 更好的做法是只调用 saveData，让 Firebase 监听器重新渲染
+                saveData(); 
             }
         });
         dateCell.appendChild(dateInput);
@@ -230,7 +291,7 @@ function addNewCarRow() {
     };
     appData.cars.unshift(newCar);
     saveData();
-    renderCars();
+    // renderCars(); // 渲染将由 saveData 触发的 Firebase 监听器完成
 }
 
 /**
@@ -257,7 +318,7 @@ function deleteCar(id) {
     if (confirm('确定要删除这辆车吗？')) {
         appData.cars = appData.cars.filter(car => car.id !== id);
         saveData();
-        renderCars();
+        // renderCars(); // 渲染将由 saveData 触发的 Firebase 监听器完成
     }
 }
 
@@ -313,16 +374,32 @@ function renderGanttChart() {
             const end = new Date(order.endTime);
 
             // 检查订单是否在当前月
-            const startDay = (start.getMonth() === month && start.getFullYear() === year) 
-                ? start.getDate() : 1;
-            const endDay = (end.getMonth() === month && end.getFullYear() === year) 
-                ? end.getDate() : daysInMonth;
+            const startYearMonth = new Date(year, month, 1);
+            const endYearMonth = new Date(year, month + 1, 0);
 
+            // 确定订单在当前月份的实际起始和结束日期（跨月处理）
+            let startDay = 1;
+            if (start.getFullYear() === year && start.getMonth() === month) {
+                startDay = start.getDate();
+            } else if (start > endYearMonth) {
+                return; // 订单完全在当前月之后
+            }
+            
+            let endDay = daysInMonth;
+            if (end.getFullYear() === year && end.getMonth() === month) {
+                endDay = end.getDate();
+            } else if (end < startYearMonth) {
+                return; // 订单完全在当前月之前
+            }
+            
             // 标记占用日期
             for (let i = Math.max(1, startDay); i <= Math.min(daysInMonth, endDay); i++) {
-                // 仅当订单在月份内时才标记
-                if (new Date(year, month, i) >= new Date(start.getFullYear(), start.getMonth(), start.getDate()) && 
-                    new Date(year, month, i) <= new Date(end.getFullYear(), end.getMonth(), end.getDate())) {
+                // 确保日期对象比较正确（只比较日期部分）
+                const dayDate = new Date(year, month, i, 0, 0, 0, 0);
+                const orderStartDate = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
+                const orderEndDate = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 0, 0, 0, 0);
+
+                if (dayDate >= orderStartDate && dayDate <= orderEndDate) {
                     dailyStatus[i - 1] = order;
                 }
             }
@@ -342,11 +419,18 @@ function renderGanttChart() {
                 cell.title = `订单: ${order.id} | 地点: ${order.location}`;
                 cell.textContent = order.id.substring(1); 
                 
+                // 重新计算边界，防止跨月订单只显示一半
+                const orderStartMonth = new Date(order.startTime).getMonth();
                 const orderStartDay = new Date(order.startTime).getDate();
+                const orderEndMonth = new Date(order.endTime).getMonth();
                 const orderEndDay = new Date(order.endTime).getDate();
 
-                if (day === orderStartDay) cell.classList.add('start-day');
-                if (day === orderEndDay) cell.classList.add('end-day');
+
+                if (month === orderStartMonth && day === orderStartDay) cell.classList.add('start-day');
+                if (month === orderEndMonth && day === orderEndDay) cell.classList.add('end-day');
+                // 边缘情况处理：如果订单从上月开始，本月第一天也应有开始标记
+                if (day === 1 && orderStartMonth < month) cell.classList.add('start-day');
+
 
             } else {
                 cell.textContent = 'O'; 
@@ -363,8 +447,8 @@ window.changeGanttMonth = changeGanttMonth;
 
 // ==========================================================
 // 4. 人员排班逻辑 (员工, 订单, 排班算法)
+// = ... (此部分代码保持不变，请从您的原 script.js 文件中复制) ...
 // ==========================================================
-
 /**
  * 获取 A 地点到 B 地点的车程 (分钟)
  */
@@ -632,9 +716,9 @@ function updateOrder(e, orderId) {
     document.querySelector('#order-form button[type="submit"]').innerHTML = '<i class="fas fa-paper-plane"></i> 提交订单';
     document.querySelector('#order-form button[type="submit"]').onclick = null; // 恢复默认提交
 
-    renderCarOptions(); 
-    renderScheduling();
-    renderGanttChart();
+    // renderCarOptions(); // 渲染将由 Firebase 监听器完成
+    // renderScheduling();
+    // renderGanttChart();
     alert(`订单 ${orderId} 更新成功！`);
 }
 
@@ -651,9 +735,9 @@ function deleteOrder(orderId, event) {
         
         appData.orders = appData.orders.filter(o => o.id !== orderId);
         saveData();
-        renderCarOptions();
-        renderScheduling();
-        renderGanttChart();
+        // renderCarOptions(); // 渲染将由 Firebase 监听器完成
+        // renderScheduling();
+        // renderGanttChart();
     }
 }
 
@@ -674,7 +758,7 @@ document.getElementById('employee-form')?.addEventListener('submit', function(e)
 
     appData.employees.push(newEmployee);
     saveData();
-    renderScheduling();
+    // renderScheduling(); // 渲染将由 Firebase 监听器完成
 
     e.target.reset();
     document.getElementById('employee-start').value = '09:00';
@@ -693,7 +777,7 @@ function deleteEmployee(id) {
             }
         });
         saveData();
-        renderScheduling();
+        // renderScheduling(); // 渲染将由 Firebase 监听器完成
     }
 }
 
@@ -740,16 +824,16 @@ document.getElementById('order-form')?.addEventListener('submit', function(e) {
     }
 
     saveData();
-    renderCarOptions(); // 刷新可用车辆列表
-    renderScheduling(); 
-    renderGanttChart();
+    // renderCarOptions(); // 渲染将由 Firebase 监听器完成
+    // renderScheduling(); 
+    // renderGanttChart();
     e.target.reset();
 });
 
 // ==========================================================
 // 5. 自动排班算法 (启发式)
+// = ... (此部分代码保持不变，请从您的原 script.js 文件中复制) ...
 // ==========================================================
-
 /**
  * 自动排班逻辑 (保留原有增强算法)
  */
@@ -826,7 +910,7 @@ function autoSchedule() {
     });
 
     saveData();
-    renderScheduling();
+    // renderScheduling(); // 渲染将由 Firebase 监听器完成
 
     const unassignedCount = appData.orders.filter(o => o.assignedTo === null).length;
     alert(`自动排班完成。共分配 ${appData.orders.length - unassignedCount} 个订单，有 ${unassignedCount} 个订单待分配。`);
@@ -835,8 +919,8 @@ function autoSchedule() {
 
 // ==========================================================
 // 6. 拖拽逻辑 (Drag and Drop)
+// = ... (此部分代码保持不变，请从您的原 script.js 文件中复制) ...
 // ==========================================================
-
 let draggedOrderId = null;
 
 function dragStart(e) {
@@ -881,7 +965,7 @@ function dropOrder(e) {
     order.assignedTo = targetEmployeeId;
 
     saveData();
-    renderScheduling(); 
+    // renderScheduling(); // 渲染将由 Firebase 监听器完成
 }
 
 // ==========================================================
@@ -889,16 +973,14 @@ function dropOrder(e) {
 // ==========================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadData();
-    if (appData.cars.length === 0 && appData.employees.length === 0 && appData.orders.length === 0) {
-        saveData(); 
-        loadData(); 
-    }
-    
     // 初始化显示甘特图的当前月份
     currentGanttMonth = new Date(currentGanttMonth.getFullYear(), currentGanttMonth.getMonth(), 1); 
     
-    showPage('car-management'); 
+    // 关键：启动 Firebase 数据加载和实时监听
+    loadData();
+    
+    // 首次启动时，等待 loadData 完成后，Firebase 监听器会调用渲染函数
+    // showPage('car-management'); // 移除，由 loadData 内部的监听器负责首次渲染
 });
 
 // 确保函数在全局范围内可用
@@ -908,5 +990,11 @@ window.deleteCar = deleteCar;
 window.deleteEmployee = deleteEmployee;
 window.autoSchedule = autoSchedule;
 window.changeGanttMonth = changeGanttMonth;
-window.editOrder = editOrder; // 新增
-window.deleteOrder = deleteOrder; // 新增
+window.editOrder = editOrder; 
+window.deleteOrder = deleteOrder;
+{
+  "rules": {
+    ".read": "true",
+    ".write": "true"
+  }
+}
