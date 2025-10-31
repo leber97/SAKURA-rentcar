@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌸 レンタカー调度管理系统</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header>
+        <h1><i class="fas fa-car"></i> レンタカー调度管理</h1>
+        <nav>
+            <button id="nav-car" onclick="showPage('car-management')" class="active">车辆管理</button>
+            <button id="nav-schedule" onclick="showPage('personnel-scheduling')">人员排班</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="car-management" class="page active">
+            <h2>🛠️ 车辆信息管理</h2>
+            <div class="controls">
+                <button onclick="addNewCarRow()"><i class="fas fa-plus"></i> 新增车辆</button>
+            </div>
+            
+            <div class="car-table-container">
+                <table id="car-table">
+                    <thead>
+                        <tr>
+                            <th>代称</th>
+                            <th>车牌</th>
+                            <th>颜色</th>
+                            <th>基本信息</th>
+                            <th>状态</th>
+                            <th>工厂/地点</th>
+                            <th>订单ID</th>
+                            <th>下一动作</th>
+                            <th>已清洗</th>
+                            <th>上次点检日期</th>
+                            <th>点检提醒</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+            
+            <h3>📊 车辆排期甘特图</h3>
+            <div class="gantt-controls">
+                <button onclick="changeGanttMonth(-1)"><i class="fas fa-chevron-left"></i> 上月</button>
+                <span id="gantt-month-display"></span>
+                <button onclick="changeGanttMonth(1)">下月 <i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div id="gantt-chart-container">
+            </div>
+        </section>
+
+        <section id="personnel-scheduling" class="page">
+            <h2>🧑‍🔧 接送车人员排班</h2>
+            <div class="input-area">
+                <div class="order-input-card">
+                    <h3>新增订单 (含车辆信息)</h3>
+                    <form id="order-form">
+                        <input type="text" id="order-id" placeholder="单号" required>
+                        <select id="order-type">
+                            <option value="接车">接车</option>
+                            <option value="送车">送车</option>
+                        </select>
+                        <input type="text" id="order-location" placeholder="地点 (如: 羽田空港)" required>
+                        <input type="time" id="order-time" required>
+                        
+                        <select id="order-car-id">
+                            <option value="" disabled selected>--- 分配车辆 (可选) ---</option>
+                        </select>
+                        
+                        <input type="date" id="order-start-date" placeholder="租借开始日期" required>
+                        <input type="date" id="order-end-date" placeholder="租借结束日期" required>
+
+                        <div class="order-details-checkboxes">
+                            <label><input type="checkbox" id="order-baby-seat"> 需要婴儿座椅</label>
+                            <label><input type="checkbox" id="order-needs-payment"> 需要收取费用</label>
+                        </div>
+
+                        <textarea id="order-notes" placeholder="备注/客户特殊要求"></textarea>
+                        <button type="submit"><i class="fas fa-paper-plane"></i> 提交订单</button>
+                    </form>
+                </div>
+
+                <div class="employee-input-card">
+                    <h3>新增出勤员工</h3>
+                    <form id="employee-form">
+                        <input type="text" id="employee-name" placeholder="员工姓名" required>
+                        <input type="time" id="employee-start" placeholder="上班时间" value="09:00" required>
+                        <input type="time" id="employee-end" placeholder="下班时间" value="18:00" required>
+                        <button type="submit"><i class="fas fa-user-plus"></i> 添加员工</button>
+                    </form>
+                    
+                    <button onclick="autoSchedule()" class="auto-schedule-btn"><i class="fas fa-magic"></i> 自动排班</button>
+
+                    <div id="unassigned-orders" class="employee-window">
+                        <h4>待分配订单 (拖入员工窗口)</h4>
+                    </div>
+                </div>
+            </div>
+
+            <h3>排班窗口 (可拖拽更改)</h3>
+            <div id="employee-schedule-container">
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
