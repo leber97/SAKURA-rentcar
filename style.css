@@ -1,0 +1,650 @@
+/* ========================================================== */
+/* 樱花主题 - 排版优化版 (Sakura Theme - Layout Optimized)      */
+/* ========================================================== */
+
+/* 颜色变量 (沿用您的可爱配色) */
+:root {
+    --sakura-pink-light: #ffe4e1; /* 轻柔粉 (背景/表格头) */
+    --sakura-pink-medium: #ffb6c1; /* 中粉 (主导航/预定) */
+    --sakura-pink-dark: #f08080; /* 珊瑚粉 (强调色/按钮) */
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --border-radius: 10px; /* 略大的圆角 */
+    --font-color: #333;
+    --background-color: #fcf6f9; /* 极浅的底色 */
+    --white: #FFFFFF;
+    --success-green: #90EE90; /* 浅绿 */
+    --conflict-red: #e74c3c; /* 冲突红 */
+}
+
+body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', 'Arial', sans-serif;
+    background-color: var(--background-color);
+    color: var(--font-color);
+    margin: 0;
+    padding-top: 65px; /* 为固定导航留出空间 */
+    line-height: 1.6;
+}
+
+/* 头部导航栏 */
+header {
+    background-color: var(--sakura-pink-medium);
+    color: var(--white);
+    padding: 10px 30px;
+    box-shadow: 0 4px 8px var(--shadow-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.6em;
+}
+
+/* 导航按钮 */
+nav button {
+    background: none;
+    border: none;
+    color: var(--white);
+    padding: 8px 18px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+    border-radius: var(--border-radius);
+    margin-left: 8px;
+    font-weight: 500;
+}
+
+nav button:hover:not(.active) {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+nav button.active {
+    background-color: var(--white);
+    color: var(--sakura-pink-dark);
+    font-weight: bold;
+    box-shadow: 0 2px 5px var(--shadow-color);
+}
+
+main {
+    padding: 20px;
+    max-width: 1400px;
+    margin: auto;
+}
+
+/* 页面和卡片样式 */
+.page {
+    display: none;
+    padding: 30px; /* 增加内边距，减少拥挤感 */
+    background-color: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: 0 0 20px var(--shadow-color);
+    margin-top: 10px;
+}
+
+.page.active {
+    display: block;
+}
+
+h2, h3 {
+    color: var(--sakura-pink-dark);
+    border-bottom: 2px solid var(--sakura-pink-light);
+    padding-bottom: 8px;
+    margin-bottom: 25px; /* 增加标题下间距 */
+}
+
+/* 通用按钮样式 */
+.controls button,
+.form-section button[type="submit"] {
+    background-color: var(--sakura-pink-dark);
+    color: var(--white);
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.1s;
+    font-size: 15px;
+    margin-right: 15px;
+    font-weight: 600;
+}
+
+.controls button:hover,
+.form-section button[type="submit"]:hover {
+    background-color: #d16e6e;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.controls {
+    margin-bottom: 20px;
+}
+
+/* ========================================================== */
+/* 车辆管理区域 (Car Management)                               */
+/* ========================================================== */
+
+/* --- 新增：交互式状态按钮和行警报样式 --- */
+.car-status-btn {
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    display: inline-block;
+    min-width: 40px;
+    text-align: center;
+    border: 1px solid transparent;
+    transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.status-ok { /* 已清洗 / 点检正常 */
+    background-color: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+}
+
+.status-danger { /* 待清洗 / 点检超期 */
+    background-color: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+    animation: pulse-red 1s infinite alternate; /* 增加闪烁动画 */
+}
+
+.status-warning { /* 点检临近 */
+    background-color: #fff3cd;
+    color: #856404;
+    border-color: #ffeeba;
+}
+
+.status-info { /* 点检日期未录入 */
+    background-color: #bee5eb; 
+    color: #0c5460;
+    border-color: #bae5f0;
+}
+
+.highlight-danger {
+    background-color: #ffdddd !important; /* 点检超期，表格行爆红 */
+}
+
+@keyframes pulse-red {
+    from {
+        box-shadow: 0 0 3px #f8d7da;
+    }
+    to {
+        box-shadow: 0 0 8px #f8d7da;
+    }
+}
+/* --- 结束：交互式状态按钮和行警报样式 --- */
+
+
+/* 表格样式 */
+.car-table-container {
+    overflow-x: auto;
+    margin-top: 15px;
+}
+
+#car-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#car-table th, #car-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+}
+
+#car-table th {
+    background-color: var(--sakura-pink-light);
+    font-weight: bold;
+    color: var(--sakura-pink-dark);
+}
+
+#car-table tr:hover {
+    background-color: #fffafa; 
+}
+
+/* 可编辑单元格的样式 */
+#car-table td[contenteditable="true"]:focus {
+    outline: 2px solid var(--sakura-pink-medium);
+    background-color: #FFF0F5;
+}
+
+/* 提醒样式 */
+.maintenance-required {
+    color: var(--conflict-red);
+    font-weight: bold;
+}
+
+/* 表格内的删除按钮 (使用类选择器兼容新交互元素) */
+#car-table .delete-btn {
+    background: none;
+    border: none;
+    color: var(--sakura-pink-dark);
+    font-size: 1.1em;
+    cursor: pointer;
+}
+
+#car-table .delete-btn:hover {
+    color: var(--conflict-red);
+}
+
+/* ========================================================== */
+/* 排班界面布局 (Scheduling Layout)                             */
+/* ========================================================== */
+
+.input-area {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* 自适应两列 */
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.order-input-card, .employee-input-card {
+    padding: 25px;
+    border: 1px solid var(--sakura-pink-medium);
+    border-radius: var(--border-radius);
+    background-color: var(--sakura-pink-light);
+    box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+.order-input-card h3, .employee-input-card h3 {
+    margin-top: 0;
+    color: var(--sakura-pink-dark);
+    border-bottom: 1px solid var(--sakura-pink-medium);
+    padding-bottom: 5px;
+}
+
+/* 表单元素统一风格 */
+form input[type="text"],
+form input[type="time"],
+form input[type="date"],
+form textarea,
+form select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    border: 1px solid var(--sakura-pink-medium);
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+/* 排班展示区 */
+#personnel-scheduling-content {
+    display: grid;
+    grid-template-columns: 280px 1fr; /* 待分配订单 | 员工排班 */
+    gap: 25px;
+    margin-top: 20px;
+}
+
+/* 待分配订单列表 */
+#unassigned-orders {
+    background-color: var(--sakura-pink-light);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    min-height: 400px;
+    border: 2px dashed var(--sakura-pink-dark);
+    box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+#unassigned-orders h4 {
+    color: var(--sakura-pink-dark);
+    border-bottom: 2px solid var(--sakura-pink-medium);
+    padding-bottom: 10px;
+    margin-top: 0;
+}
+
+/* 员工排班容器 */
+#employee-schedule-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-content: flex-start; /* 确保内容从顶部开始 */
+}
+
+/* 员工窗口 (Drop Target) */
+.employee-window {
+    background-color: var(--white);
+    border: 2px solid var(--sakura-pink-medium); 
+    border-radius: var(--border-radius);
+    padding: 15px;
+    min-height: 250px;
+    width: calc(33.333% - 20px); /* 三列布局，占用更多宽度 */
+    box-sizing: border-box;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: border-color 0.3s, background-color 0.3s;
+}
+
+.employee-window h4 {
+    color: var(--sakura-pink-dark);
+    margin-top: 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--sakura-pink-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.employee-window.drop-target-active {
+    border-color: var(--success-green); /* 拖拽时边框变绿 */
+    background-color: #F5FFF5; /* 拖拽进入时的淡绿背景 */
+}
+
+/* 订单卡片 (Draggable) */
+.order-card {
+    position: relative;
+    background-color: #FFFAFA; 
+    border: 1px solid var(--sakura-pink-light);
+    border-left: 5px solid var(--sakura-pink-medium); /* 粉色强调条 */
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 6px;
+    cursor: grab;
+    font-size: 0.9em;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: background-color 0.2s;
+}
+
+.order-card:hover {
+    background-color: #FFE0E6; /* 悬停时变深 */
+}
+
+.order-card strong {
+    color: var(--sakura-pink-dark);
+}
+
+/* 任务链信息样式 */
+.task-chain-info {
+    font-size: 0.8em;
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px dashed #E0B0FF; /* 淡淡的紫色虚线，增添可爱感 */
+    color: #666; 
+}
+
+.order-actions {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+}
+
+/* 冲突样式 */
+.schedule-conflict {
+    border-color: var(--conflict-red) !important;
+    background-color: #FFF0F0;
+}
+
+.schedule-conflict h4 {
+    color: var(--conflict-red) !important;
+}
+
+.conflict-alert {
+    background-color: var(--conflict-red);
+    color: var(--white);
+    padding: 5px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+/* ========================================================== */
+/* 甘特图区域 (Gantt Chart Area)                              */
+/* ========================================================== */
+
+#gantt-chart-container {
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
+#gantt-controls {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    gap: 15px;
+}
+
+#gantt-month-display {
+    font-size: 1.4em;
+    font-weight: bold;
+    color: var(--sakura-pink-dark);
+}
+
+.gantt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em;
+    min-width: 1200px; /* 确保在小屏幕上有滚动条 */
+}
+
+.gantt-table th, .gantt-table td {
+    border: 1px solid #E0E0E0;
+    padding: 5px 3px;
+    text-align: center;
+    width: 30px; /* 保证日期的宽度一致 */
+}
+
+.gantt-table th:first-child, .gantt-table td:first-child {
+    width: 150px;
+    min-width: 150px;
+    background-color: var(--sakura-pink-light);
+    font-weight: bold;
+    text-align: left;
+}
+
+/* 今日列 */
+.today-col {
+    background-color: #FFECB3 !important; /* 淡黄色，柔和地突出今天 */
+}
+
+/* 车辆被预定 */
+.reserved-day {
+    background-color: var(--sakura-pink-medium); 
+    color: var(--white);
+    font-weight: bold;
+}
+
+/* 预定起始日和结束日 */
+.start-day {
+    border-left: 3px solid var(--sakura-pink-dark);
+}
+.end-day {
+    border-right: 3px solid var(--sakura-pink-dark);
+}
+/* --- Modal 弹窗样式 --- */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.4); 
+}
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto; 
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 600px;
+    border-radius: 8px;
+    position: relative;
+}
+.close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+.close-btn:hover, .close-btn:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+.modal-content label {
+    display: block;
+    margin-top: 10px;
+    font-weight: bold;
+}
+.modal-content input[type="text"], 
+.modal-content input[type="time"],
+.modal-content textarea {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    box-sizing: border-box;
+}
+.modal-content button {
+    margin-top: 15px;
+}
+.modal-content .delete-btn {
+    background-color: #f44336;
+    color: white;
+    margin-left: 10px;
+}
+
+/* --- 订单输入区域样式 (针对新布局) --- */
+#employee-gantt .gantt-top-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    gap: 20px;
+}
+#employee-gantt .employee-management-area {
+    flex-shrink: 0;
+    width: 200px;
+}
+#employee-gantt .order-input-card {
+    flex-grow: 1;
+    border: 1px solid #ccc;
+    padding: 15px;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+#employee-gantt .form-group-inline {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+#employee-gantt .form-group-inline > * {
+    flex: 1;
+}
+#employee-gantt .form-group-inline textarea {
+    height: 38px;
+    resize: none;
+    flex: 2;
+}
+
+/* --- 甘特图七日视图样式 --- */
+.gantt-table.seven-day-view th, 
+.gantt-table.seven-day-view td {
+    min-width: 120px; /* 增加七日视图的单元格宽度 */
+    vertical-align: top;
+    height: 100px; /* 增加单元格高度以容纳卡片 */
+}
+.gantt-table.employee-gantt td {
+    position: relative;
+}
+
+/* --- 拖拽任务卡片样式 --- */
+.gantt-task-card {
+    background-color: #2196F3;
+    color: white;
+    padding: 5px;
+    margin: 3px 0;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: grab;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.gantt-task-card:active {
+    cursor: grabbing;
+}
+.gantt-task-card.unassigned {
+    background-color: #FF9800; /* 待分配订单使用橙色 */
+}
+.gantt-task-card.conflict-task {
+    background-color: #F44336; /* 冲突任务使用红色 */
+    border: 1px solid white;
+}
+.gantt-table .unassigned-drop-target {
+    background-color: #f0f0f0;
+}
+.gantt-table td.drop-target-active {
+    border: 2px dashed #007bff;
+    background-color: #e6f7ff !important;
+}
+
+/* --- 员工甘特图颜色 (更新，与JS保持一致) --- */
+.employee-gantt td {
+    background-color: #E0E0E0; /* 默认：未排班/休息日 */
+}
+.employee-gantt td.today-col {
+    background-color: #FFFFAA; /* 强调今天 */
+}
+.employee-gantt td.working-day {
+    background-color: #FFFFFF; /* 出勤日的默认背景 */
+}
+.employee-gantt td.free-day {
+    background-color: #4CAF50; /* 空闲 */
+    color: white;
+}
+.employee-gantt td.task-day {
+    background-color: #ADD8E6; /* 有任务 - 单元格底色 */
+    color: black;
+}
+.employee-gantt td.conflict-day {
+    background-color: #FFCDD2 !important; /* 单元格底色变浅红 */
+    color: black;
+}
+/* 响应式调整 */
+@media (max-width: 1200px) {
+    .employee-window {
+        width: calc(50% - 10px); /* 屏幕变窄时改为两列 */
+    }
+}
+
+@media (max-width: 900px) {
+    #personnel-scheduling-content {
+        grid-template-columns: 1fr; /* 排班区变为单列堆叠 */
+    }
+    .employee-window {
+        width: 100%; /* 单列全宽 */
+    }
+    .input-area {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        height: auto;
+        padding-bottom: 10px;
+    }
+    nav {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+    }
+    nav button {
+        margin-top: 5px;
+    }
+    body {
+        padding-top: 110px;
+    }
+}
